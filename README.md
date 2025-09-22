@@ -2,8 +2,8 @@
 
 A modern, responsive product listing page for fashion products built with Next.js, TypeScript, and Tailwind CSS.
 
-**Live demo:** https://your-app.vercel.app  
-**Repo:** https://github.com/<your-username>/<repo-name>
+**Live demo:** https://e-commm-five.vercel.app/
+**Repo:** https://github.com/anasali79/E-comm
 
 ---
 
