@@ -13,8 +13,9 @@ import { RecommendedProducts } from "@/components/recommended-products"
 import { Footer } from "@/components/footer"
 import { HeroBanner } from "@/components/hero-banner"
 import { ProductListing } from "@/components/product-listing"
+import { ProductDetailModal } from "@/components/product-detail-modal"
 import { mockProducts } from "@/lib/mock-data"
-import type { FilterState, SortOption } from "@/lib/types"
+import type { FilterState, SortOption, Product } from "@/lib/types"
 
 export default function HomePage() {
   const router = useRouter()
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   const [filters, setFilters] = useState<FilterState>(() => {
     if (typeof window === 'undefined') {
@@ -325,7 +327,7 @@ export default function HomePage() {
         <Footer />
         
         {selectedCategory && (
-          <div className="fixed inset-0 z-50 bg-white">
+          <div className="fixed inset-0 z-50 bg-white flex flex-col">
             <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between shadow-sm">
               <div>
                 <h2 className="text-lg font-bold capitalize">
@@ -364,6 +366,7 @@ export default function HomePage() {
                     <div 
                       key={product.id} 
                       className="bg-white rounded-xl p-3 shadow-sm border cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedProduct(product)}
                     >
                       <div className="relative mb-3">
                         <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
@@ -432,6 +435,10 @@ export default function HomePage() {
                         <button 
                           className="w-full text-white text-xs py-2 rounded-lg font-medium hover:opacity-90 transition-opacity mt-2"
                           style={{ backgroundColor: '#40BFFF' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add to cart functionality can be added here
+                          }}
                         >
                           Add to Cart
                         </button>
@@ -442,6 +449,15 @@ export default function HomePage() {
               )}
             </div>
           </div>
+        )}
+        
+        {/* Product Detail Modal */}
+        {selectedProduct && (
+          <ProductDetailModal 
+            product={selectedProduct}
+            isOpen={!!selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+          />
         )}
         
         <style jsx>{`
