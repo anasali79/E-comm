@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Filter, X, Heart } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { MobileNavbar } from "@/components/mobile-navbar"
@@ -17,7 +17,7 @@ import { Briefcase, MapPin, Plane, Globe, Camera } from "lucide-react"
 
 export default function BagPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [hoveredStat, setHoveredStat] = useState<number | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -27,26 +27,32 @@ export default function BagPage() {
   const [mobileFilteredProducts, setMobileFilteredProducts] = useState<Product[]>([])
 
   const [filters, setFilters] = useState<FilterState>(() => {
-    const brands = searchParams.get("brands")?.split(",").filter(Boolean) || []
-    const colors = searchParams.get("colors")?.split(",").filter(Boolean) || []
-    const categories = searchParams.get("categories")?.split(",").filter(Boolean) || []
-    const minPrice = Number.parseInt(searchParams.get("minPrice") || "0")
-    const maxPrice = Number.parseInt(searchParams.get("maxPrice") || "500")
-
+    if (typeof window === 'undefined') {
+      return {
+        categories: ['bags'],
+        brands: [],
+        colors: [],
+        priceRange: [0, 15000],
+      }
+    }
+    
+    // We'll initialize this properly in useEffect
     return {
-      categories,
-      brands,
-      colors,
-      priceRange: [minPrice, maxPrice],
+      categories: ['bags'],
+      brands: [],
+      colors: [],
+      priceRange: [0, 15000],
     }
   })
 
   const [sortBy, setSortBy] = useState<SortOption>(() => {
-    return (searchParams.get("sort") as SortOption) || "name"
+    if (typeof window === 'undefined') return "name"
+    return "name"
   })
 
   const [currentPage, setCurrentPage] = useState(() => {
-    return Number.parseInt(searchParams.get("page") || "1")
+    if (typeof window === 'undefined') return 1
+    return 1
   })
 
   const itemsPerPage = 6
@@ -82,17 +88,43 @@ export default function BagPage() {
       categories: []
     })
     
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+    // Initialize searchParams and filters after mount
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      setSearchParams(params)
+      
+      const brands = params.get("brands")?.split(",").filter(Boolean) || []
+      const colors = params.get("colors")?.split(",").filter(Boolean) || []
+      const categories = params.get("categories")?.split(",").filter(Boolean) || []
+      const minPrice = Number.parseInt(params.get("minPrice") || "0")
+      const maxPrice = Number.parseInt(params.get("maxPrice") || "500")
+      const sort = (params.get("sort") as SortOption) || "name"
+      const page = Number.parseInt(params.get("page") || "1")
+
+      setFilters({
+        categories,
+        brands,
+        colors,
+        priceRange: [minPrice, maxPrice],
+      })
+      
+      setSortBy(sort)
+      setCurrentPage(page)
+      
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768)
+      }
+      
+      checkIsMobile()
+      window.addEventListener('resize', checkIsMobile)
+      
+      return () => window.removeEventListener('resize', checkIsMobile)
     }
-    
-    checkIsMobile()
-    window.addEventListener('resize', checkIsMobile)
-    
-    return () => window.removeEventListener('resize', checkIsMobile)
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const params = new URLSearchParams()
 
     if (filters.brands.length > 0) params.set("brands", filters.brands.join(","))
@@ -594,8 +626,6 @@ export default function BagPage() {
             
             {/* Enhanced Pagination Section with MORE and Pagination side by side */}
             <div className="flex items-center gap-4 mt-8">
-
-            
 
               {/* Pagination Container - stretched with reduced vertical padding */}
               <div className="bg-gray-100 rounded-lg py-1 px-2 w-full max-w-6xl gap-4 flex items-center justify-center">

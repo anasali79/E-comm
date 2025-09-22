@@ -12,10 +12,16 @@ export function CartIcon() {
 
   useEffect(() => {
     const loadCartItems = () => {
+      if (typeof window === 'undefined') return
       const savedCart = localStorage.getItem('cart')
       if (savedCart) {
-        const items = JSON.parse(savedCart)
-        setCartCount(items.reduce((total: number, item: any) => total + item.quantity, 0))
+        try {
+          const items = JSON.parse(savedCart)
+          setCartCount(items.reduce((total: number, item: any) => total + item.quantity, 0))
+        } catch (e) {
+          console.error('Error parsing saved cart in CartIcon:', e)
+          setCartCount(0)
+        }
       }
     }
 
@@ -24,19 +30,28 @@ export function CartIcon() {
     const handleCartUpdate = () => {
       loadCartItems()
     }
-    
-    window.addEventListener('cartUpdated', handleCartUpdate)
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cartUpdated', handleCartUpdate)
+    }
 
     return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cartUpdated', handleCartUpdate)
+      }
     }
   }, [])
 
   const getTotalPrice = () => {
-    const savedCart = localStorage.getItem('cart')
-    if (savedCart) {
-      const items = JSON.parse(savedCart)
-      return items.reduce((total: number, item: any) => total + (item.price * item.quantity), 0).toFixed(2)
+    if (typeof window === 'undefined') return '0.00'
+    try {
+      const savedCart = localStorage.getItem('cart')
+      if (savedCart) {
+        const items = JSON.parse(savedCart)
+        return items.reduce((total: number, item: any) => total + (item.price * item.quantity), 0).toFixed(2)
+      }
+    } catch (e) {
+      console.error('Error computing total price in CartIcon:', e)
     }
     return '0.00'
   }

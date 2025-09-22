@@ -129,26 +129,44 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 // Create Context
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+// Helper functions for safe localStorage access
+const getLocalStorageItem = (key: string) => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(key)
+  }
+  return null
+}
+
+const setLocalStorageItem = (key: string, value: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, value)
+  }
+}
+
 // Cart Provider Component
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
   
   // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart')
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart)
-        dispatch({ type: 'LOAD_CART', items: parsedCart })
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error)
+    if (typeof window !== 'undefined') {
+      const savedCart = getLocalStorageItem('cart')
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart)
+          dispatch({ type: 'LOAD_CART', items: parsedCart })
+        } catch (error) {
+          console.error('Error loading cart from localStorage:', error)
+        }
       }
     }
   }, [])
   
   // Save cart to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state.items))
+    if (typeof window !== 'undefined') {
+      setLocalStorageItem('cart', JSON.stringify(state.items))
+    }
   }, [state.items])
   
   const addToCart = (product: Product) => {

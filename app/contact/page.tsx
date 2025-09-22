@@ -29,11 +29,16 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    if (typeof window !== 'undefined') {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+    }
     setIsSubmitting(false)
     setFormData({ firstName: '', lastName: '', email: '', subject: '', message: '' })
-    alert('Message sent successfully!')
+    if (typeof window !== 'undefined') {
+      alert('Message sent successfully!')
+    }
   }
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

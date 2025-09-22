@@ -14,11 +14,18 @@ export function MobileNavbar() {
   useEffect(() => {
     // Load cart items from localStorage
     const loadCartItems = () => {
+      if (typeof window === 'undefined') return
       const savedCart = localStorage.getItem('cart')
       if (savedCart) {
-        const items = JSON.parse(savedCart)
-        setCartItems(items)
-        setCartCount(items.reduce((total: number, item: any) => total + item.quantity, 0))
+        try {
+          const items = JSON.parse(savedCart)
+          setCartItems(items)
+          setCartCount(items.reduce((total: number, item: any) => total + item.quantity, 0))
+        } catch (e) {
+          console.error('Error parsing saved cart in MobileNavbar:', e)
+          setCartItems([])
+          setCartCount(0)
+        }
       }
     }
 
@@ -29,19 +36,22 @@ export function MobileNavbar() {
       loadCartItems()
     }
 
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Custom event listener for cart updates
-    const handleCartUpdate = () => {
-      loadCartItems()
-    }
-    
-    window.addEventListener('cartUpdated', handleCartUpdate)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange)
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('cartUpdated', handleCartUpdate)
+      // Custom event listener for cart updates
+      const handleCartUpdate = () => {
+        loadCartItems()
+      }
+
+      window.addEventListener('cartUpdated', handleCartUpdate)
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange)
+        window.removeEventListener('cartUpdated', handleCartUpdate)
+      }
     }
+    return () => {}
   }, [])
 
   const toggleMenu = () => {
@@ -61,7 +71,10 @@ export function MobileNavbar() {
     }).filter(item => item.quantity > 0)
 
     setCartItems(updatedCart)
-    localStorage.setItem('cart', JSON.stringify(updatedCart))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cart', JSON.stringify(updatedCart))
+      window.dispatchEvent(new Event('cartUpdated'))
+    }
     setCartCount(updatedCart.reduce((total, item) => total + item.quantity, 0))
   }
 
@@ -70,7 +83,10 @@ export function MobileNavbar() {
       !(item.id === itemId && item.color === color && item.size === size)
     )
     setCartItems(updatedCart)
-    localStorage.setItem('cart', JSON.stringify(updatedCart))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cart', JSON.stringify(updatedCart))
+      window.dispatchEvent(new Event('cartUpdated'))
+    }
     setCartCount(updatedCart.reduce((total, item) => total + item.quantity, 0))
   }
 

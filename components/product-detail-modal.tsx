@@ -39,22 +39,30 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       image: product.imageUrl
     }
     
-    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const existingItemIndex = existingCart.findIndex((item: any) => 
-      item.id === product.id && item.color === selectedColor && item.size === selectedSize
-    )
-    
-    if (existingItemIndex > -1) {
-      existingCart[existingItemIndex].quantity += quantity
-    } else {
-      existingCart.push(cartItem)
+    if (typeof window === 'undefined') {
+      showToastMessage('Unable to add to cart')
+      return
     }
-    
-    localStorage.setItem('cart', JSON.stringify(existingCart))
-    
-    window.dispatchEvent(new Event('cartUpdated'))
-    
-    showToastMessage(`Added ${quantity} ${product.name} to cart!`)
+
+    try {
+      const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+      const existingItemIndex = existingCart.findIndex((item: any) => 
+        item.id === product.id && item.color === selectedColor && item.size === selectedSize
+      )
+
+      if (existingItemIndex > -1) {
+        existingCart[existingItemIndex].quantity += quantity
+      } else {
+        existingCart.push(cartItem)
+      }
+
+      localStorage.setItem('cart', JSON.stringify(existingCart))
+      window.dispatchEvent(new Event('cartUpdated'))
+      showToastMessage(`Added ${quantity} ${product.name} to cart!`)
+    } catch (e) {
+      console.error('Error updating cart in ProductDetailModal:', e)
+      showToastMessage('Error adding to cart')
+    }
   }
 
   const handleBuyNow = () => {

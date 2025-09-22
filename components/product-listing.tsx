@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { MobileSidebar } from "@/components/mobile-sidebar"
 import { ProductGrid } from "@/components/product-grid"
@@ -33,35 +33,36 @@ export function ProductListing({
   onPageChange: externalOnPageChange
 }: ProductListingProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
-  const [internalFilters, setInternalFilters] = useState<FilterState>(() => {
-    const brands = searchParams.get("brands")?.split(",").filter(Boolean) || []
-    const colors = searchParams.get("colors")?.split(",").filter(Boolean) || []
-    const categories = searchParams.get("categories")?.split(",").filter(Boolean) || []
-    const minPrice = Number.parseInt(searchParams.get("minPrice") || "0")
-    const maxPrice = Number.parseInt(searchParams.get("maxPrice") || "500")
+  const [internalFilters, setInternalFilters] = useState<FilterState>(() => ({
+    categories: [],
+    brands: [],
+    colors: [],
+    priceRange: [0, 500],
+  }))
 
-    return {
-      categories,
-      brands,
-      colors,
-      priceRange: [minPrice, maxPrice],
-    }
-  })
+  const [internalSortBy, setInternalSortBy] = useState<SortOption>(() => "name")
 
-  const [internalSortBy, setInternalSortBy] = useState<SortOption>(() => {
-    return (searchParams.get("sort") as SortOption) || "name"
-  })
+  const [internalCurrentPage, setInternalCurrentPage] = useState(() => 1)
 
-  const [internalCurrentPage, setInternalCurrentPage] = useState(() => {
-    return Number.parseInt(searchParams.get("page") || "1")
-  })
-
+  // Parse URL search params on client after mount to initialize filters/sort/page
   useEffect(() => {
-    const page = Number.parseInt(searchParams.get("page") || "1")
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const brands = params.get("brands")?.split(",").filter(Boolean) || []
+    const colors = params.get("colors")?.split(",").filter(Boolean) || []
+    const categories = params.get("categories")?.split(",").filter(Boolean) || []
+    const minPrice = Number.parseInt(params.get("minPrice") || "0")
+    const maxPrice = Number.parseInt(params.get("maxPrice") || "500")
+    const sort = (params.get("sort") as SortOption) || "name"
+    const page = Number.parseInt(params.get("page") || "1") || 1
+
+    setInternalFilters({ categories, brands, colors, priceRange: [minPrice, maxPrice] })
+    setInternalSortBy(sort)
     setInternalCurrentPage(page)
-  }, [searchParams])
+  }, [])
+
+  // No longer using useSearchParams; updates to URL are handled by router.replace above
 
   const filters = externalFilters || internalFilters
   const setFilters = externalOnFiltersChange || setInternalFilters

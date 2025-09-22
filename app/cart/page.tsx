@@ -10,15 +10,46 @@ import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 
+// Helper function to safely access localStorage
+const getLocalStorageItem = (key: string) => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(key)
+  }
+  return null
+}
+
+const setLocalStorageItem = (key: string, value: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, value)
+  }
+}
+
+const removeLocalStorageItem = (key: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(key)
+  }
+}
+
+const dispatchCartUpdatedEvent = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('cartUpdated'))
+  }
+}
+
 export default function CartPage() {
   const { items, totalItems, totalPrice, updateQuantity, removeFromCart, clearCart } = useCart()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [localCartItems, setLocalCartItems] = useState<any[]>([])
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart')
+    const savedCart = getLocalStorageItem('cart')
     if (savedCart) {
-      setLocalCartItems(JSON.parse(savedCart))
+      try {
+        setLocalCartItems(JSON.parse(savedCart))
+      } catch (e) {
+        console.error('Error parsing cart data', e)
+        setLocalCartItems([])
+      }
     }
   }, [])
 
@@ -37,8 +68,8 @@ export default function CartPage() {
         return item
       })
       setLocalCartItems(updatedCart)
-      localStorage.setItem('cart', JSON.stringify(updatedCart))
-      window.dispatchEvent(new Event('cartUpdated'))
+      setLocalStorageItem('cart', JSON.stringify(updatedCart))
+      dispatchCartUpdatedEvent()
     } else {
       if (newQuantity >= 1) {
         updateQuantity(itemId, newQuantity)
@@ -52,8 +83,8 @@ export default function CartPage() {
         !(item.id === itemId && item.color === color && item.size === size)
       )
       setLocalCartItems(updatedCart)
-      localStorage.setItem('cart', JSON.stringify(updatedCart))
-      window.dispatchEvent(new Event('cartUpdated'))
+      setLocalStorageItem('cart', JSON.stringify(updatedCart))
+      dispatchCartUpdatedEvent()
     } else {
       removeFromCart(itemId)
     }
@@ -62,8 +93,8 @@ export default function CartPage() {
   const handleClearCart = () => {
     if (localCartItems.length > 0) {
       setLocalCartItems([])
-      localStorage.removeItem('cart')
-      window.dispatchEvent(new Event('cartUpdated'))
+      removeLocalStorageItem('cart')
+      dispatchCartUpdatedEvent()
     } else {
       clearCart()
     }
@@ -72,11 +103,13 @@ export default function CartPage() {
   const handleCheckout = () => {
     setIsCheckingOut(true)
     setTimeout(() => {
-      alert("Order placed successfully!")
+      if (typeof window !== 'undefined') {
+        alert("Order placed successfully!")
+      }
       if (localCartItems.length > 0) {
         setLocalCartItems([])
-        localStorage.removeItem('cart')
-        window.dispatchEvent(new Event('cartUpdated'))
+        removeLocalStorageItem('cart')
+        dispatchCartUpdatedEvent()
       } else {
         clearCart()
       }

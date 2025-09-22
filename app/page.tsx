@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { MobileNavbar } from "@/components/mobile-navbar"
 import { HeroSlider } from "@/components/hero-slider"
@@ -18,42 +18,71 @@ import type { FilterState, SortOption } from "@/lib/types"
 
 export default function HomePage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
 
   const [filters, setFilters] = useState<FilterState>(() => {
-    const brands = searchParams.get("brands")?.split(",").filter(Boolean) || []
-    const colors = searchParams.get("colors")?.split(",").filter(Boolean) || []
-    const categories = searchParams.get("categories")?.split(",").filter(Boolean) || []
-    const minPrice = Number.parseInt(searchParams.get("minPrice") || "0")
-    const maxPrice = Number.parseInt(searchParams.get("maxPrice") || "500")
-
+    if (typeof window === 'undefined') {
+      return {
+        categories: [],
+        brands: [],
+        colors: [],
+        priceRange: [0, 500],
+      }
+    }
+    
+    // We'll initialize this properly in useEffect
     return {
-      categories,
-      brands,
-      colors,
-      priceRange: [minPrice, maxPrice],
+      categories: [],
+      brands: [],
+      colors: [],
+      priceRange: [0, 500],
     }
   })
 
   const [sortBy, setSortBy] = useState<SortOption>(() => {
-    return (searchParams.get("sort") as SortOption) || "name"
+    if (typeof window === 'undefined') return "name"
+    return "name"
   })
 
   const [currentPage, setCurrentPage] = useState(() => {
-    return Number.parseInt(searchParams.get("page") || "1")
+    if (typeof window === 'undefined') return 1
+    return 1
   })
 
   useEffect(() => {
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    setCurrentPage(page)
-  }, [searchParams])
+    // Initialize searchParams and filters after mount
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      setSearchParams(params)
+      
+      const brands = params.get("brands")?.split(",").filter(Boolean) || []
+      const colors = params.get("colors")?.split(",").filter(Boolean) || []
+      const categories = params.get("categories")?.split(",").filter(Boolean) || []
+      const minPrice = Number.parseInt(params.get("minPrice") || "0")
+      const maxPrice = Number.parseInt(params.get("maxPrice") || "500")
+      const sort = (params.get("sort") as SortOption) || "name"
+      const page = Number.parseInt(params.get("page") || "1")
+
+      setFilters({
+        categories,
+        brands,
+        colors,
+        priceRange: [minPrice, maxPrice],
+      })
+      
+      setSortBy(sort)
+      setCurrentPage(page)
+    }
+  }, [])
 
   const updateFilters = (newFilters: FilterState) => {
     setFilters(newFilters)
+    
+    if (typeof window === 'undefined') return
     
     const params = new URLSearchParams()
     
@@ -72,6 +101,8 @@ export default function HomePage() {
   const updateSortBy = (newSortBy: SortOption) => {
     setSortBy(newSortBy)
     
+    if (typeof window === 'undefined') return
+    
     const params = new URLSearchParams()
     
     if (filters.brands.length > 0) params.set("brands", filters.brands.join(","))
@@ -89,6 +120,8 @@ export default function HomePage() {
   const updateCurrentPage = (newPage: number) => {
     setCurrentPage(newPage)
     
+    if (typeof window === 'undefined') return
+    
     const params = new URLSearchParams()
     
     if (filters.brands.length > 0) params.set("brands", filters.brands.join(","))
@@ -104,14 +137,16 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+    if (typeof window !== 'undefined') {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768)
+      }
+      
+      checkIsMobile()
+      window.addEventListener('resize', checkIsMobile)
+      
+      return () => window.removeEventListener('resize', checkIsMobile)
     }
-    
-    checkIsMobile()
-    window.addEventListener('resize', checkIsMobile)
-    
-    return () => window.removeEventListener('resize', checkIsMobile)
   }, [])
 
   const handleCategoryClick = (category: string) => {
